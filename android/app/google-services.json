@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "739784990220",
+    "project_id": "rdsqibla",
+    "storage_bucket": "rdsqibla.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:739784990220:android:eef744b9f9bf99cad55829",
+        "android_client_info": {
+          "package_name": "com.girindra.rds_qibla"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1vWCMOUy5ujnIVTk-WCESgpKUXodfu6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
