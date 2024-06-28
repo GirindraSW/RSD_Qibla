@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:location/location.dart' as loc;
 
 class MyHomeScreen extends StatefulWidget {
   @override
@@ -10,71 +12,113 @@ class MyHomeScreen extends StatefulWidget {
 
 class _MyHomeScreenState extends State<MyHomeScreen> {
   final Completer<GoogleMapController> _controller = Completer();
+  final Stream<QuerySnapshot> _dataStream =
+      FirebaseFirestore.instance.collection('coordinate_data').snapshots();
 
-  static const CameraPosition _initialPosition = CameraPosition(
+  loc.LocationData? currentLocation;
+  loc.Location location = loc.Location();
+
+  CameraPosition _initialPosition = CameraPosition(
     target: LatLng(-7.68267222, 109.845025),
-    zoom: 17.75,
+    zoom: 12.0,
   );
 
-  final List<Marker> myMarker = [];
-  final List<Marker> markerList = const [
-    Marker(
-      markerId: MarkerId('First'),
-      position: LatLng(-7.68267222, 109.845025),
-      infoWindow: InfoWindow(
-        title: 'Masjid Abdurrahman',
-      ),
-    ),
-    Marker(
-      markerId: MarkerId('Second'),
-      position: LatLng(-7.74070833, 110.52637222),
-      infoWindow: InfoWindow(
-        title: 'Masjid Al- Barokah',
-      ),
-    ),
-    Marker(
-      markerId: MarkerId('Third'),
-      position: LatLng(-7.77902222, 110.30361667),
-      infoWindow: InfoWindow(
-        title: 'Masjid Al- Hasanah',
-      ),
-    ),
-    Marker(
-      markerId: MarkerId('Fourth'),
-      position: LatLng(-7.84025833, 110.36602222),
-      infoWindow: InfoWindow(
-        title: 'Masjid Al Hidayah',
-      ),
-    ),
-    Marker(
-      markerId: MarkerId('Fiveth'),
-      position: LatLng(-7.74046111, 110.35174167),
-      infoWindow: InfoWindow(
-        title: 'Masjid Al- Hikmah',
-      ),
-    ),
-  ];
+  List<Marker> myMarker = []; // List to store markers
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    myMarker.addAll(markerList);
+    _getLocation();
   }
 
   @override
   Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _dataStream,
+      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+        if (snapshot.hasError) {
+          return textResult('Something went wrong');
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return textResult("Loading");
+        }
+
+        // Clear existing markers
+        myMarker.clear();
+
+        // Add markers from Firestore data
+        snapshot.data!.docs.forEach((DocumentSnapshot document) {
+          Map<String, dynamic> data = document.data()! as Map<String, dynamic>;
+          double latitude = data['latitude'];
+          double longitude = data['longitude'];
+          LatLng location = LatLng(latitude, longitude);
+
+          myMarker.add(
+            Marker(
+              markerId: MarkerId(document.id),
+              position: location,
+              infoWindow: InfoWindow(
+                title: data['name'],
+              ),
+            ),
+          );
+        });
+
+        return Scaffold(
+          body: GoogleMap(
+            mapType: MapType.normal,
+            initialCameraPosition: _initialPosition,
+            markers: Set<Marker>.of(myMarker),
+            onMapCreated: (GoogleMapController controller) {
+              _controller.complete(controller);
+            },
+            myLocationEnabled: true,
+            myLocationButtonEnabled: true,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget textResult(String text) {
     return Scaffold(
-      body: SafeArea(
-        child: GoogleMap(
-          initialCameraPosition: _initialPosition,
-          mapType: MapType.normal,
-          markers: Set<Marker>.of(myMarker),
-          onMapCreated: (GoogleMapController controller) {
-            _controller.complete(controller);
-          },
-        ),
+      body: Center(
+        child: Text(text),
       ),
     );
+  }
+
+  Future<void> _getLocation() async {
+    bool serviceEnabled;
+    loc.PermissionStatus permissionStatus;
+
+    serviceEnabled = await location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (!serviceEnabled) {
+        return;
+      }
+    }
+
+    permissionStatus = await location.hasPermission();
+    if (permissionStatus == loc.PermissionStatus.denied) {
+      permissionStatus = await location.requestPermission();
+      if (permissionStatus != loc.PermissionStatus.granted) {
+        return;
+      }
+    }
+
+    loc.LocationData _locationData = await location.getLocation();
+    setState(() {
+      currentLocation = _locationData;
+      _initialPosition = CameraPosition(
+        target: LatLng(
+          _locationData.latitude ?? 0,
+          _locationData.longitude ?? 0,
+        ),
+        zoom: 12.0,
+      );
+    });
   }
 }
