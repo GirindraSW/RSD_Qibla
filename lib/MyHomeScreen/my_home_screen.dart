@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:location/location.dart' as loc;
 
 class MyHomeScreen extends StatefulWidget {
   @override
@@ -15,9 +15,6 @@ class _MyHomeScreenState extends State<MyHomeScreen> {
   final Stream<QuerySnapshot> _dataStream =
       FirebaseFirestore.instance.collection('coordinate_data').snapshots();
 
-  loc.LocationData? currentLocation;
-  loc.Location location = loc.Location();
-
   CameraPosition _initialPosition = CameraPosition(
     target: LatLng(-7.68267222, 109.845025),
     zoom: 12.0,
@@ -28,7 +25,42 @@ class _MyHomeScreenState extends State<MyHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _getLocation();
+    // packData();
+  }
+
+  Future<Position> getUserLocation() async {
+    await Geolocator.requestPermission()
+        .then((value) {})
+        .onError((error, stackTrace) {
+      print('error$error');
+    });
+
+    return await Geolocator.getCurrentPosition();
+  }
+
+  packData() {
+    getUserLocation().then((value) async {
+      print('My Location');
+      print('${value.latitude} ${value.longitude}');
+
+      myMarker.add(
+        Marker(
+          markerId: MarkerId('Second'),
+          position: LatLng(value.latitude, value.longitude),
+          infoWindow: InfoWindow(
+            title: 'My Location',
+          ),
+        ),
+      );
+      CameraPosition cameraPosition = CameraPosition(
+        target: LatLng(value.latitude, value.longitude),
+        zoom: 17.0,
+      );
+      final GoogleMapController controller = await _controller.future;
+
+      controller.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+      setState(() {});
+    });
   }
 
   @override
@@ -76,6 +108,12 @@ class _MyHomeScreenState extends State<MyHomeScreen> {
             myLocationEnabled: true,
             myLocationButtonEnabled: true,
           ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              packData();
+            },
+            child: Icon(Icons.radio_button_off),
+          ),
         );
       },
     );
@@ -87,38 +125,5 @@ class _MyHomeScreenState extends State<MyHomeScreen> {
         child: Text(text),
       ),
     );
-  }
-
-  Future<void> _getLocation() async {
-    bool serviceEnabled;
-    loc.PermissionStatus permissionStatus;
-
-    serviceEnabled = await location.serviceEnabled();
-    if (!serviceEnabled) {
-      serviceEnabled = await location.requestService();
-      if (!serviceEnabled) {
-        return;
-      }
-    }
-
-    permissionStatus = await location.hasPermission();
-    if (permissionStatus == loc.PermissionStatus.denied) {
-      permissionStatus = await location.requestPermission();
-      if (permissionStatus != loc.PermissionStatus.granted) {
-        return;
-      }
-    }
-
-    loc.LocationData _locationData = await location.getLocation();
-    setState(() {
-      currentLocation = _locationData;
-      _initialPosition = CameraPosition(
-        target: LatLng(
-          _locationData.latitude ?? 0,
-          _locationData.longitude ?? 0,
-        ),
-        zoom: 12.0,
-      );
-    });
   }
 }
