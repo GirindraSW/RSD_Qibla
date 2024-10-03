@@ -2,9 +2,10 @@ import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:rds_qibla/MyHomeScreen/my_home_screen.dart';
-import 'package:rds_qibla/compassapp/compass.dart';
-import 'package:rds_qibla/compassapp/direction.dart';
+import 'package:rds_qibla/ui/pages/my_home_screen.dart';
+// import 'package:rds_qibla/ui/nearest_location.dart';
+// import 'package:rds_qibla/compassapp/compass.dart';
+// import 'package:rds_qibla/compassapp/direction.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +19,7 @@ void main() async {
           projectId: "rdsqibla",
         ))
       : await Firebase.initializeApp();
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -34,7 +35,19 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: CompassPage(),
+      home: MyHomeScreen(),
     );
   }
 }
+
+// class MyApp extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       home: Scaffold(
+//         appBar: AppBar(title: Text('Nearest Places')),
+//         body: NearestPlacesWidget(),
+//       ),
+//     );
+//   }
+// }
