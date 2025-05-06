@@ -13,7 +13,7 @@ void main() async {
   Platform.isAndroid
       ? await Firebase.initializeApp(
           options: const FirebaseOptions(
-          apiKey: "AIzaSyD1vWCMOUy5ujnIVTk-WCESgpKUXodfu6o",
+          apiKey: "WOW",
           appId: "1:739784990220:android:eef744b9f9bf99cad55829",
           messagingSenderId: "739784990220",
           projectId: "rdsqibla",
